@@ -1,7 +1,7 @@
 # hostname
 upgrade.ece.ncsu.edu
 # date
-2026-10-29T16:43:02-04:00
+2026-11-02T14:39:37-05:00
 # kernel
 Linux upgrade.ece.ncsu.edu 6.8.0-138-generic #138~22.04.1-Ubuntu SMP PREEMPT_DYNAMIC Fri Aug  7 13:43:15 UTC  x86_64 x86_64 x86_64 GNU/Linux
 # lscpu
@@ -64,9 +64,15 @@ hugepages-2048kB: total=0 free=0
 cpuinfo flags: 
 ls: cannot access '/dev/sgx*': No such file or directory
 ls: cannot access '/dev/isgx': No such file or directory
+# AMD SEV (VM-level memory encryption, AMD's closest analogue)
+cpuinfo flags: 
+ls: cannot access '/dev/sev': No such file or directory
+crw-rw----+ 1 root kvm 10, 232 Oct 20 14:08 /dev/kvm
+kvm_amd sev param: cat: /sys/module/kvm_amd/parameters/sev: No such file or directory
+dmesg: no SEV lines (or not readable)
 # SMT active
 1
 # CPU frequency governor
 powersave
 # load at collection time
- 16:43:03 up 9 days,  2:34,  0 users,  load average: 0.18, 0.11, 0.03
+ 14:39:37 up 13 days,  1:30,  0 users,  load average: 0.05, 0.02, 0.00
