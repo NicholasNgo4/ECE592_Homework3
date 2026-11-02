@@ -1,4 +1,8 @@
 host,kind,step_n,file
+skylark,nop,220,data/skylark/rob_prf/sweep_20261102-121257_cpu40.csv
+skylark,int,116,data/skylark/rob_prf/sweep_20261102-121257_cpu40.csv
+skylark,vec,144,data/skylark/rob_prf/sweep_20261102-121257_cpu40.csv
+skylark,mix,220,data/skylark/rob_prf/sweep_20261102-121257_cpu40.csv
 upgrade,nop,220,data/upgrade/rob_prf/sweep_20261029-164302.csv
 upgrade,int,144,data/upgrade/rob_prf/sweep_20261029-164302.csv
 upgrade,vec,144,data/upgrade/rob_prf/sweep_20261029-164302.csv

@@ -1,0 +1,15 @@
+run_all on skylark, cpu 2, 20261102-115925
+== Q4/Q5 ROB / PRF sweep
+cpu 2, recording perf core cycles and TSC
+== Q6/Q8/Q9 TLB coarse sweeps
+cpu 2, page size 4k, 172 points up to 16384 pages, TSC 2.396 GHz, recording perf core cycles
+THP check: 2048 verified 2 MiB pages of 2048 requested (0 fell back to 4 KiB and were discarded)
+cpu 2, page size 2m, 124 points up to 2048 pages, TSC 2.396 GHz, recording perf core cycles
+UNSUPPORTED: cannot allocate 8 x 1g pages (no 1 GiB hugetlbfs pool reserved?)
+1g: UNSUPPORTED on skylark (see message above)
+== TLB refinement sweeps around each detected step
+refine 4k 54:71:1
+cpu 2, page size 4k, 18 points up to 16384 pages, TSC 2.396 GHz, recording perf core cycles
+refine 2m 54:71:1
+THP check: 2048 verified 2 MiB pages of 2048 requested (0 fell back to 4 KiB and were discarded)
+cpu 2, page size 2m, 18 points up to 2048 pages, TSC 2.396 GHz, recording perf core cycles

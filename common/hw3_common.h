@@ -37,6 +37,13 @@ int pin_to_cpu(int cpu);
 int cycles_open(void);
 uint64_t cycles_read(int fd);
 
+/* Raw PMU event (user mode only), e.g. AMD config = umask << 8 | event.
+ * raw_read() returns the count and sets *muxed if the kernel multiplexed
+ * the counter (running < enabled), in which case the count is unreliable.
+ * Callers must fix *muxed to 0 themselves before the first read. */
+int raw_open(uint64_t config);
+uint64_t raw_read(int fd, int *muxed);
+
 /* Allocate `bytes` and link one pointer per 64-byte line into a single
  * random cycle, so each dependent load goes to a line the prefetchers
  * cannot predict. Returns the buffer base; since every line is on the

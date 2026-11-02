@@ -53,6 +53,29 @@ uint64_t cycles_read(int fd)
     return v;
 }
 
+int raw_open(uint64_t config)
+{
+    struct perf_event_attr attr;
+    memset(&attr, 0, sizeof(attr));
+    attr.size = sizeof(attr);
+    attr.type = PERF_TYPE_RAW;
+    attr.config = config;
+    attr.exclude_kernel = 1;
+    attr.exclude_hv = 1;
+    attr.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED | PERF_FORMAT_TOTAL_TIME_RUNNING;
+    return (int)syscall(SYS_perf_event_open, &attr, 0, -1, -1, 0);
+}
+
+uint64_t raw_read(int fd, int *muxed)
+{
+    uint64_t v[3] = {0, 0, 0}; /* value, time enabled, time running */
+    if (read(fd, v, sizeof(v)) != sizeof(v))
+        return 0;
+    if (v[2] < v[1])
+        *muxed = 1;
+    return v[0];
+}
+
 char *chase_build(size_t bytes, uint64_t seed)
 {
     size_t lines = bytes / LINE;

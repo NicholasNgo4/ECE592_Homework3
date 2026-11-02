@@ -1,4 +1,13 @@
 host,page_size,signal,level,step_after_pages,starts_at_pages,ticks_per_access,ns_per_access,added_ns_vs_prev,extrapolated_entries,file
+skylark,4k,alias,0,,4,8.04,3.36,,,data/skylark/tlb/4k_20261102-121257_cpu40.csv
+skylark,4k,alias,1,61,64,33.88,14.14,10.79,,data/skylark/tlb/4k_20261102-121257_cpu40.csv
+skylark,4k,alias (refined),,62,63,,,,61,data/skylark/tlb/refine_4k_20261102-115925_0.csv
+skylark,4k,alias (refined),,1552,1576,,,,1258,data/skylark/tlb/refine_4k_20261102-120053_0.csv
+skylark,2m,private-dense,0,,4,8.03,3.35,,,data/skylark/tlb/2m_20261102-121257_cpu40.csv
+skylark,2m,private-dense,1,61,64,29.46,12.3,8.95,,data/skylark/tlb/2m_20261102-121257_cpu40.csv
+skylark,2m,private-dense,2,2048,2139,49.05,20.47,8.18,,data/skylark/tlb/2m_20261102-121257_cpu40.csv
+skylark,2m,private-dense (refined),,62,63,,,,60,data/skylark/tlb/refine_2m_20261102-115925_1.csv
+skylark,2m,private-dense (refined),,2032,2056,,,,1986,data/skylark/tlb/refine_2m_20261102-120053_1.csv
 upgrade,4k,alias,0,,4,4.36,1.37,,,data/upgrade/tlb/4k_20261029-164302.csv
 upgrade,4k,alias,1,64,67,10.89,3.41,2.04,,data/upgrade/tlb/4k_20261029-164302.csv
 upgrade,4k,alias,2,1512,1579,20.39,6.39,2.98,,data/upgrade/tlb/4k_20261029-164302.csv

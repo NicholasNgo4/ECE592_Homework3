@@ -9,6 +9,19 @@ reason why that isn't possible.
 - `upgrade` (i7-8700): the CPU supports SGX1, but there's no `/dev/sgx_enclave`
   or `/dev/isgx`, so SGX is not enabled in firmware/kernel. Still need to find a
   course machine with SGX enabled.
+- `skylark` (AMD EPYC 7532, Zen 2): **an enclave run is not possible.**
+  - No SGX: it is an Intel-only feature (no `sgx` flag, no `/dev/sgx*`).
+  - AMD's closest analogue is SEV, which the silicon supports: CPUID
+    `0x8000001F` EAX = `0x1000f` (SME, SEV, SEV-ES). But it is switched off:
+    the kernel log reports `ccp 0000:22:00.1: SEV: memory encryption not
+    enabled by BIOS`, the `sev` cpuinfo flag is absent, and there is no
+    `/dev/sev` or `/dev/kvm`. Enabling it needs BIOS access (admin only).
+  - Even if enabled, SEV is not an enclave. It encrypts a whole virtual
+    machine's memory and needs KVM plus root to launch a guest, so the
+    comparison would be "encrypted VM vs. plain VM", not "inside vs. outside
+    an enclave" within one process.
+  - Evidence: the SEV section of `data/skylark/machine_info.txt`, recorded
+    by `scripts/machine_info.sh`.
 
 ## Design notes
 

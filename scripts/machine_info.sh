@@ -19,6 +19,11 @@ out=${1:-/dev/stdout}
   echo "# SGX"
   echo "cpuinfo flags: $(grep -o -w -E 'sgx|sgx_lc' /proc/cpuinfo | sort -u | tr '\n' ' ')"
   ls -l /dev/sgx* /dev/isgx 2>&1
+  echo "# AMD SEV (VM-level memory encryption, AMD's closest analogue)"
+  echo "cpuinfo flags: $(grep -o -w -E 'sme|sev|sev_es|sev_snp' /proc/cpuinfo | sort -u | tr '\n' ' ')"
+  ls -l /dev/sev /dev/kvm 2>&1
+  echo "kvm_amd sev param: $(cat /sys/module/kvm_amd/parameters/sev 2>&1)"
+  dmesg 2>/dev/null | grep -i -E 'SEV|memory encryption' || echo "dmesg: no SEV lines (or not readable)"
   echo "# SMT active";          cat /sys/devices/system/cpu/smt/active 2>/dev/null || echo unknown
   echo "# CPU frequency governor"
   cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo unknown

@@ -1,0 +1,13 @@
+tlb_pmu on skylark, cpu 2, 20261102-120944
+4k events: l1miss=0xff45,l2hit=0x0145,l2miss=0x1045,coal_hit=0x0245
+2m events: l1miss=0xff45,l2hit=0x0445,l2miss=0x4045,walks=0x0346
+cpu 2, page size 4k, 172 points up to 16384 pages, TSC 2.396 GHz, recording perf core cycles
+cpu 2, page size 4k, 33 points up to 16384 pages, TSC 2.396 GHz, recording perf core cycles
+cpu 2, page size 4k, 86 points up to 16384 pages, TSC 2.396 GHz, recording perf core cycles
+THP check: 4096 verified 2 MiB pages of 4096 requested (0 fell back to 4 KiB and were discarded)
+cpu 2, page size 2m, 140 points up to 4096 pages, TSC 2.396 GHz, recording perf core cycles
+THP check: 4096 verified 2 MiB pages of 4096 requested (0 fell back to 4 KiB and were discarded)
+cpu 2, page size 2m, 33 points up to 4096 pages, TSC 2.396 GHz, recording perf core cycles
+THP check: 4096 verified 2 MiB pages of 4096 requested (0 fell back to 4 KiB and were discarded)
+cpu 2, page size 2m, 86 points up to 4096 pages, TSC 2.396 GHz, recording perf core cycles
+rows with multiplexed counters: 0

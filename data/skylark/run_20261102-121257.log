@@ -1,0 +1,8 @@
+repeat coarse TLB sweeps on skylark, 20261102-121257: cpu 2 (node 0) and cpu 40 (node 1); 2m extended to 4096 pages; ROB/PRF on cpu 40
+cpu 2, page size 4k, 172 points up to 16384 pages, TSC 2.396 GHz, recording perf core cycles
+THP check: 4096 verified 2 MiB pages of 4096 requested (0 fell back to 4 KiB and were discarded)
+cpu 2, page size 2m, 140 points up to 4096 pages, TSC 2.396 GHz, recording perf core cycles
+cpu 40, page size 4k, 172 points up to 16384 pages, TSC 2.396 GHz, recording perf core cycles
+THP check: 4096 verified 2 MiB pages of 4096 requested (0 fell back to 4 KiB and were discarded)
+cpu 40, page size 2m, 140 points up to 4096 pages, TSC 2.396 GHz, recording perf core cycles
+cpu 40, recording perf core cycles and TSC

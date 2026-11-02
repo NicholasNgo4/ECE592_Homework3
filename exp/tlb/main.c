@@ -18,7 +18,11 @@
  * For 4 KiB pages this spreads slots over all L1 sets; for 2 MiB pages it
  * also spreads them over L2/L3 sets exactly like the dense control does.
  * (A fixed or 4 KiB-limited offset in 2 MiB pages piles every slot into a
- * few L2 sets and produces a conflict-miss step that looks like a TLB.) */
+ * few L2 sets and produces a conflict-miss step that looks like a TLB.)
+ *
+ * -e adds raw PMU events (e.g. DTLB miss counters) read around each timed
+ * repetition, so every row also carries event counts per access. This is
+ * independent evidence that a timing step is a TLB step. */
 #define _GNU_SOURCE
 #include <getopt.h>
 #include <linux/mman.h>
@@ -37,6 +41,7 @@
 #ifndef MADV_COLLAPSE
 #define MADV_COLLAPSE 25
 #endif
+#define MAX_EVENTS 8
 
 uint64_t tlb_chase(void **addrs, uint64_t len, uint64_t total);
 
@@ -44,7 +49,7 @@ static void usage(const char *prog)
 {
     fprintf(stderr,
             "usage: %s [-s 4k|2m|1g] [-c cpu] [-M max_pages] [-L lo:hi:step]\n"
-            "          [-r reps] [-n accesses] [-o out.csv]\n"
+            "          [-r reps] [-n accesses] [-e name=cfg,...] [-o out.csv]\n"
             "  -s size   page size under test (default 4k)\n"
             "  -c cpu    logical CPU to pin to (default 2)\n"
             "  -M pages  largest page count (default 4k:16384, 2m:2048, 1g:8)\n"
@@ -52,6 +57,9 @@ static void usage(const char *prog)
             "            geometric sweep (16 points per doubling); use to refine\n"
             "  -r reps   measurements per point (default 7)\n"
             "  -n n      loads per measurement (default 400000)\n"
+            "  -e events raw PMU events to count per access, as name=config\n"
+            "            (AMD config = umask << 8 | event, e.g. l1miss=0xff45);\n"
+            "            adds <name>_per_access columns and a pmu_muxed flag\n"
             "  -o file   CSV output (default stdout)\n",
             prog);
 }
@@ -198,7 +206,28 @@ struct ctx {
     void **addrs;
     size_t *order;
     uint64_t rng;
+    int nev, efd[MAX_EVENTS];
+    char *ename[MAX_EVENTS];
 };
+
+/* Parse "name=config,name=config" into c->ename / c->efd. */
+static int open_events(struct ctx *c, char *spec)
+{
+    for (char *tok = strtok(spec, ","); tok; tok = strtok(NULL, ",")) {
+        char *eq = strchr(tok, '=');
+        if (!eq || c->nev == MAX_EVENTS)
+            return -1;
+        *eq = 0;
+        int fd = raw_open(strtoull(eq + 1, NULL, 0));
+        if (fd < 0) {
+            perror("perf_event_open (raw event)");
+            return -1;
+        }
+        c->ename[c->nev] = tok;
+        c->efd[c->nev++] = fd;
+    }
+    return 0;
+}
 
 /* bases[i] = base + i*stride, for regions mapped as one contiguous block. */
 static char **linear_bases(char *base, size_t n, size_t stride)
@@ -225,16 +254,27 @@ static void measure(struct ctx *c, const char *pattern, size_t pages,
     uint64_t total = c->accesses > 4 * pages ? c->accesses : 4 * pages;
     tlb_chase(c->addrs, pages, 2 * pages + 10000); /* warm TLB + caches */
     for (int r = 0; r < c->reps; r++) {
+        uint64_t e0[MAX_EVENTS], e1[MAX_EVENTS];
+        int muxed = 0;
+        for (int k = 0; k < c->nev; k++)
+            e0[k] = raw_read(c->efd[k], &muxed);
         uint64_t c0 = c->cfd >= 0 ? cycles_read(c->cfd) : 0;
         uint64_t t0 = tsc_now();
         tlb_chase(c->addrs, pages, total);
         uint64_t t1 = tsc_now();
         uint64_t c1 = c->cfd >= 0 ? cycles_read(c->cfd) : 0;
+        for (int k = 0; k < c->nev; k++)
+            e1[k] = raw_read(c->efd[k], &muxed);
         fprintf(c->out, "%s,%s,%zu,%d,%.3f,", c->size_name, pattern, pages, r,
                 (double)(t1 - t0) / total);
         if (c->cfd >= 0)
             fprintf(c->out, "%.3f", (double)(c1 - c0) / total);
-        fprintf(c->out, ",%.4f\n", c->ghz);
+        fprintf(c->out, ",%.4f", c->ghz);
+        for (int k = 0; k < c->nev; k++)
+            fprintf(c->out, ",%.4f", (double)(e1[k] - e0[k]) / total);
+        if (c->nev)
+            fprintf(c->out, ",%d", muxed);
+        fprintf(c->out, "\n");
     }
     fflush(c->out);
 }
@@ -242,11 +282,12 @@ static void measure(struct ctx *c, const char *pattern, size_t pages,
 int main(int argc, char **argv)
 {
     const char *size_name = "4k", *lin = NULL, *outpath = NULL;
+    char *events = NULL;
     int cpu = 2, reps = 7;
     long max_pages = 0;
     uint64_t accesses = 400000;
     int opt;
-    while ((opt = getopt(argc, argv, "s:c:M:L:r:n:o:h")) != -1) {
+    while ((opt = getopt(argc, argv, "s:c:M:L:r:n:e:o:h")) != -1) {
         switch (opt) {
         case 's': size_name = optarg; break;
         case 'c': cpu = atoi(optarg); break;
@@ -254,6 +295,7 @@ int main(int argc, char **argv)
         case 'L': lin = optarg; break;
         case 'r': reps = atoi(optarg); break;
         case 'n': accesses = strtoull(optarg, NULL, 10); break;
+        case 'e': events = optarg; break;
         case 'o': outpath = optarg; break;
         default: usage(argv[0]); return opt == 'h' ? 0 : 1;
         }
@@ -336,13 +378,20 @@ int main(int argc, char **argv)
         perror("setup");
         return 1;
     }
+    if (events && open_events(&c, events) != 0) {
+        fprintf(stderr, "bad -e event list\n");
+        return 1;
+    }
     c.cfd = cycles_open();
     c.ghz = tsc_ghz();
     fprintf(stderr, "cpu %d, page size %s, %zu points up to %ld pages, TSC %.3f GHz, %s\n",
             cpu, size_name, npts, max_pages, c.ghz,
             c.cfd >= 0 ? "recording perf core cycles" : "no perf access, TSC only");
 
-    fprintf(c.out, "page_size,pattern,pages,rep,tsc_per_access,cycles_per_access,tsc_ghz\n");
+    fprintf(c.out, "page_size,pattern,pages,rep,tsc_per_access,cycles_per_access,tsc_ghz");
+    for (int k = 0; k < c.nev; k++)
+        fprintf(c.out, ",%s_per_access", c.ename[k]);
+    fprintf(c.out, "%s\n", c.nev ? ",pmu_muxed" : "");
     for (size_t k = 0; k < npts; k++) {
         size_t p = pts[k];
         if (alias)

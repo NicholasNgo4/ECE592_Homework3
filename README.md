@@ -7,11 +7,11 @@ Due **November 3, 2026, 11:59 PM Eastern**. Assignment: [Homework_3.pdf](Homewor
 
 | Q# | Question | Points | Subsystem | Status |
 |---|---|---|---|---|
-| 4 | Reverse engineer the ROB size | 30 | OoO back end | Harness working; `upgrade` done |
-| 5 | Reverse engineer the physical register file size; identify the register class | 35 | OoO back end / renaming | Harness working; `upgrade` done |
-| 6 | Reverse engineer the number of TLB levels and the size of each level | 35 | Virtual memory | Harness working; `upgrade` done |
-| 8 | Measure the cost of a TLB miss | 10 | Virtual memory | Harness working; `upgrade` done |
-| 9 | Compare TLB behavior across supported page sizes | 10 | Virtual memory | 4 KiB + 2 MiB done on `upgrade`; 1 GiB unavailable (no pool) |
+| 4 | Reverse engineer the ROB size | 30 | OoO back end | `upgrade` + `skylark` done |
+| 5 | Reverse engineer the physical register file size; identify the register class | 35 | OoO back end / renaming | `upgrade` + `skylark` done |
+| 6 | Reverse engineer the number of TLB levels and the size of each level | 35 | Virtual memory | `upgrade` + `skylark` done (skylark 4 KiB L2 step is a gradual ramp) |
+| 8 | Measure the cost of a TLB miss | 10 | Virtual memory | `upgrade` + `skylark` done |
+| 9 | Compare TLB behavior across supported page sizes | 10 | Virtual memory | 4 KiB + 2 MiB done on `upgrade` + `skylark`; 1 GiB unavailable on both (no pool) |
 | | **Total** | **120** | | |
 
 Stretch goal if time allows: **Q10, BTB capacity (20 pts)**, which would add the front end.
@@ -56,7 +56,7 @@ reproduction instructions, and the AI-use log.
 | Host | CPU | Microarchitecture | SGX | perf counters | Huge pages | Role |
 |---|---|---|---|---|---|---|
 | upgrade | Intel Core i7-8700 | Coffee Lake (Skylake family) | No `/dev/sgx` (not enabled) | No (`perf_event_paranoid=4`) | 2 MiB via THP; no 1 GiB pool | Machine 1 |
-| _TBD_ | | | | | | Machine 2 (suggestion: Skylark, AMD EPYC 7532 / Zen 2, for a cross-vendor comparison) |
+| skylark | AMD EPYC 7532 (2 × 32 cores, SMT on), family 23 model 49, microcode 0x830107d | Zen 2 (Rome) | No: AMD has no SGX; SEV present in silicon but disabled by BIOS, no `/dev/kvm` (see [enclave/README.md](enclave/README.md)) | Yes (`perf_event_paranoid=2`; core cycles recorded) | 2 MiB via THP; no 1 GiB pool | Machine 2 |
 | _TBD_ | | | Needs SGX enabled | | | Enclave comparison |
 
 `data/<host>/machine_info.txt` holds the full record for each machine
@@ -99,6 +99,20 @@ Results on `upgrade` (two independent runs, median of 5 and 9 reps, TSC ticks):
 Open questions for the report: noise in the `nop` curve between N≈110 and
 260 (front end or uop-cache effects as the loop body grows?), and the exact
 offset between each step and the PRF size.
+
+Results on `skylark` (three independent runs, 2026-11-02: two on CPU 2 / NUMA node 0, one on CPU 40 / node 1; core cycles via perf; the core ran at ~1.49 GHz, 1.61 TSC ticks per cycle, `userspace` governor):
+
+| Filler | Step at N (runs 1 / 2 / 3) | Published spec (Zen 2) |
+|---|---|---|
+| nop | 224 / 220 / 220 (sweep step is 4) | ROB 224 |
+| int | 116 / 116 / 116 | 180 integer physical registers |
+| vec | 144 / 144 / 144 | 160 FP/vector physical registers |
+| mix | 220 / 220 / 220 | — |
+
+On `skylark` the mixed curve lies on the `nop` curve, so splitting demand
+across the two register files removes the PRF limit entirely and only the
+ROB remains. Open question: the int step sits 64 below the published 180
+(on `upgrade` the gap is 36), so the int offset differs from the vector one.
 
 ### Q6 / Q8 / Q9 — TLB ([exp/tlb/](exp/tlb/))
 
@@ -144,9 +158,62 @@ Findings so far:
   themselves stop fitting in cache. Not analyzed further, since that's a
   cache effect.
 
+Results on `skylark` (core cycles). Timing alone came from `run_all.sh` plus
+hand-ranged L2 refinements (`run_20261102-120053.log`: the auto-detector misses
+a gradual ramp, and 2 MiB needs `-M 4096`). Because perf works here, the TLB
+steps were also confirmed with AMD DTLB counters read around every timed
+repetition (`scripts/tlb_pmu.sh`, `build/tlb -e`; files `tlb/pmu_*`, two
+independent runs 120759 and 120944, no multiplexed rows):
+
+| Level | 4 KiB pages | 2 MiB pages | Published (Zen 2) |
+|---|---|---|---|
+| L1 DTLB (Q6) | 0 misses at 62 pages, 0.56/access at 63, ~1.0 by 65–67 | identical: 0 at 62, 0.56 at 63 | 64 entries, fully associative, all page sizes |
+| L2 TLB (Q6), counter miss rate | misses start ~1024 pages (>1%), 50% at 2435, >95% at 5312 | >1% at 1408–1576, >5% at ~2000, 50% at 2704 | 2048 entries |
+| Access cost, L1 TLB hit | 5 cycles | 5 cycles | — |
+| L1 TLB miss, L2 TLB hit (Q8) | **+7.0 cycles** (`private − dense`, at 128 and 1024 pages) | **+7.7 cycles** (`private − dense` at 1024 pages) | — |
+| L2 TLB miss, page walk (Q8) | **25 cycles** per walk at 4096 pages, rising to 28 at 8192 and 30 at 16384 (`alias`) | **27–28 cycles** per walk at 4096 pages | — |
+| 1 GiB pages (Q9) | — | — | Unavailable: no 1 GiB hugetlbfs pool |
+
+Walk cost = Δcycles / Δ(L2 misses per access) relative to 1024 pages, where
+every L1 miss still hits the L2 TLB. `ls_tablewalker.dside` = L2 misses
+(ratio 1.00), so every L2 TLB miss is exactly one page walk.
+
+Findings on `skylark`:
+- **Two TLB levels.** Unlike Coffee Lake, the L1 DTLB has the same capacity
+  for 4 KiB and 2 MiB pages. 62 data pages fit; the chase also reads its
+  `addrs[]` array (1 page), so 63 entries are usable at no miss, one short
+  of the published 64 (a reserved entry or the replacement policy).
+- **The L2 TLB has no sharp edge.** The counters, not just timing, show
+  misses starting near half the published 2048 entries and only reaching
+  50% beyond it. Page coalescing is ruled out (`coalesced_page_hit` = 0
+  everywhere). A hashed set index giving uneven set occupancy would produce
+  this shape; untested hypothesis. The 2 MiB curve sits about 300 pages
+  later than the 4 KiB curve.
+- **L1D way-predictor confound (cache-side, not TLB).** At 128 pages,
+  `alias` costs 20 cycles and 2 MiB `private` 22, against 12 for 4 KiB
+  `private`, although the counters show identical TLB behavior (1 L1 miss,
+  0 L2 misses per access) and the data is L1-resident. The extra cost is
+  not additive: 2 MiB `private` costs 21 at 1024 pages, when its data is in
+  L2 anyway. Consistent with the Zen L1D linear-address micro-tag
+  mispredicting (many linear addresses per line for `alias`; slots in the
+  same L1 set differing only in high address bits for 2 MiB stride), which
+  makes an L1 hit cost about an L2 hit (13 + 7 = 20). So the Q8 L2-hit cost
+  is taken where it cancels.
+- **Repeatability.** Five coarse sweeps per page size (`4k_*`/`2m_*` and
+  `pmu_*`; run 121257 repeated on CPU 2 / node 0 and CPU 40 / node 1). The
+  4 KiB `alias` curve agrees within 0.5 cycles at every checked point
+  (56–16384 pages); 2 MiB `private − dense` agrees within 0.1 cycles up to
+  1024 pages and within 1.6 cycles at 4096 (35.7–37.3).
+- **Run-to-run variation is cache-side.** `alias` reproduces to the cycle
+  across three runs. 4 KiB `private` at large footprints does not (16384
+  pages: 157 cycles in run 115925, 82 in both counter runs; 4096 pages:
+  48–57), although each run is tight internally: physical page placement
+  changes how well data and page tables cache. Page-walk costs therefore use
+  `alias`.
+
 ### Enclave comparison ([enclave/](enclave/))
 
-Planned. See [enclave/README.md](enclave/README.md).
+Planned. Not possible on `upgrade` (SGX not enabled) or `skylark` (AMD: no SGX; SEV disabled by BIOS and VM-level only). See [enclave/README.md](enclave/README.md).
 
 ## Repository layout
 
@@ -155,7 +222,8 @@ common/          shared helpers: rdtscp timing, TSC calibration, CPU pinning, pe
 exp/rob_prf/     Q4/Q5: kernel generator (gen_kernels.py) + sweep driver (main.c)
 exp/tlb/         Q6/Q8/Q9: dependent-load kernel (tlb_chase.S) + sweep driver (main.c)
 enclave/         SGX wrapper for the same kernels (planned)
-scripts/         run_all.sh (build + run everything), machine_info.sh
+scripts/         run_all.sh (build + run everything), machine_info.sh,
+                 tlb_pmu.sh (TLB sweeps with AMD DTLB miss counters)
 data/<host>/     raw CSVs, run logs, machine_info.txt; one folder per machine
 analysis/        plot_rob_prf.py, plot_tlb.py; output in analysis/out/
 report/          report source
