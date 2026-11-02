@@ -24,6 +24,10 @@ static inline uint64_t xorshift64(uint64_t *s)
     return *s = x;
 }
 
+/* TSC frequency in GHz, calibrated against CLOCK_MONOTONIC (~100 ms), so
+ * TSC ticks can be converted to nanoseconds. */
+double tsc_ghz(void);
+
 /* Pin the calling thread to one logical CPU. Returns 0 on success. */
 int pin_to_cpu(int cpu);
 

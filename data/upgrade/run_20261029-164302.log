@@ -1,0 +1,20 @@
+run_all on upgrade, cpu 2, 20261029-164302
+== Q4/Q5 ROB / PRF sweep
+cpu 2, no perf access, recording TSC only
+== Q6/Q8/Q9 TLB coarse sweeps
+cpu 2, page size 4k, 172 points up to 16384 pages, TSC 3.192 GHz, no perf access, TSC only
+THP check: 2048 verified 2 MiB pages of 2048 requested (0 fell back to 4 KiB and were discarded)
+cpu 2, page size 2m, 124 points up to 2048 pages, TSC 3.192 GHz, no perf access, TSC only
+UNSUPPORTED: cannot allocate 8 x 1g pages (no 1 GiB hugetlbfs pool reserved?)
+1g: UNSUPPORTED on upgrade (see message above)
+== TLB refinement sweeps around each detected step
+refine 4k 57:74:1
+cpu 2, page size 4k, 18 points up to 16384 pages, TSC 3.192 GHz, no perf access, TSC only
+refine 4k 1360:1737:4
+cpu 2, page size 4k, 95 points up to 16384 pages, TSC 3.192 GHz, no perf access, TSC only
+refine 2m 28:37:1
+THP check: 2048 verified 2 MiB pages of 2048 requested (0 fell back to 4 KiB and were discarded)
+cpu 2, page size 2m, 10 points up to 2048 pages, TSC 3.192 GHz, no perf access, TSC only
+refine 2m 1360:1737:4
+THP check: 2048 verified 2 MiB pages of 2048 requested (0 fell back to 4 KiB and were discarded)
+cpu 2, page size 2m, 95 points up to 2048 pages, TSC 3.192 GHz, no perf access, TSC only

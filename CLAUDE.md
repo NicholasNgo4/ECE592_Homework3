@@ -8,7 +8,7 @@ method, and the status of each.
 
 ## On a new machine
 1. `scripts/run_all.sh <idle-cpu>` builds, records `machine_info.txt`, and runs every sweep.
-2. `python3 analysis/plot_rob_prf.py` re-plots every host side by side.
+2. `python3 analysis/plot_rob_prf.py && python3 analysis/plot_tlb.py` re-plot every host side by side.
 3. Update the Machines table and Status column in README.md, and add a row to AI_LOG.md.
 
 ## Conventions
@@ -18,3 +18,7 @@ method, and the status of each.
 - Raw data is never overwritten: each run writes a timestamped CSV.
 - Keep measured findings separate from published specs in all write-ups.
 - Cache and prefetcher reverse engineering is out of scope for this assignment.
+- ARM is out of scope (decided 2026-10-29): two x86 machines meet Track B.
+- TLB: never trust THP coverage. 2 MiB results are only valid from verified
+  pages (`map_2m_verified`), and any TLB step must be checked against the
+  `dense` control to rule out a cache step.

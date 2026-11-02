@@ -12,9 +12,11 @@ reason why that isn't possible.
 
 ## Design notes
 
-- The ROB/PRF kernels are generated ahead of time as plain assembly
-  (`build/rob_prf_kernels.S`) so the same object can be linked into an
-  enclave. Enclaves can't easily use writable+executable pages, so the code
+- The ROB/PRF kernels (`build/rob_prf_kernels.S`) and the TLB kernel
+  (`exp/tlb/tlb_chase.S`) are plain assembly, so the same objects can be
+  linked into an enclave. The TLB `alias` pattern (one physical page mapped
+  many times) relies on `mmap` of a memfd, which isn't available inside an
+  enclave, so the in-enclave TLB run will use `private` + `dense` only. Enclaves can't easily use writable+executable pages, so the code
   can't be generated at runtime.
 - `rdtsc`/`rdtscp` cause a fault inside SGX1 enclaves. Options: time each
   ECALL from outside the enclave with many iterations per call to amortize

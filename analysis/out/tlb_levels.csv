@@ -1,0 +1,11 @@
+host,page_size,signal,level,step_after_pages,starts_at_pages,ticks_per_access,ns_per_access,added_ns_vs_prev,extrapolated_entries,file
+upgrade,4k,alias,0,,4,4.36,1.37,,,data/upgrade/tlb/4k_20261029-164302.csv
+upgrade,4k,alias,1,64,67,10.89,3.41,2.04,,data/upgrade/tlb/4k_20261029-164302.csv
+upgrade,4k,alias,2,1512,1579,20.39,6.39,2.98,,data/upgrade/tlb/4k_20261029-164302.csv
+upgrade,4k,alias (refined),,64,65,,,,64,data/upgrade/tlb/refine_4k_20261029-164302_0.csv
+upgrade,4k,alias (refined),,1544,1548,,,,1529,data/upgrade/tlb/refine_4k_20261029-164302_1.csv
+upgrade,2m,private-dense,0,,4,4.27,1.34,,,data/upgrade/tlb/2m_20261029-164302.csv
+upgrade,2m,private-dense,1,32,33,10.81,3.39,2.05,,data/upgrade/tlb/2m_20261029-164302.csv
+upgrade,2m,private-dense,2,1512,1579,21.93,6.87,3.48,,data/upgrade/tlb/2m_20261029-164302.csv
+upgrade,2m,private-dense (refined),,32,33,,,,32,data/upgrade/tlb/refine_2m_20261029-164302_2.csv
+upgrade,2m,private-dense (refined),,1548,1552,,,,1531,data/upgrade/tlb/refine_2m_20261029-164302_3.csv

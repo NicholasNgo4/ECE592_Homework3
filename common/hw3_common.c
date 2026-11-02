@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
+#include <time.h>
 #include <unistd.h>
 
 #define LINE 64
@@ -17,6 +18,19 @@ int pin_to_cpu(int cpu)
     CPU_ZERO(&set);
     CPU_SET(cpu, &set);
     return sched_setaffinity(0, sizeof(set), &set);
+}
+
+double tsc_ghz(void)
+{
+    struct timespec a, b;
+    clock_gettime(CLOCK_MONOTONIC, &a);
+    uint64_t t0 = tsc_now();
+    do {
+        clock_gettime(CLOCK_MONOTONIC, &b);
+    } while ((b.tv_sec - a.tv_sec) * 1000000000L + (b.tv_nsec - a.tv_nsec) < 100000000L);
+    uint64_t t1 = tsc_now();
+    double ns = (b.tv_sec - a.tv_sec) * 1e9 + (b.tv_nsec - a.tv_nsec);
+    return (t1 - t0) / ns;
 }
 
 int cycles_open(void)
