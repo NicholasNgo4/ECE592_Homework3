@@ -225,7 +225,7 @@ enclave/         SGX wrapper for the same kernels (planned)
 scripts/         run_all.sh (build + run everything), machine_info.sh,
                  tlb_pmu.sh (TLB sweeps with AMD DTLB miss counters)
 data/<host>/     raw CSVs, run logs, machine_info.txt; one folder per machine
-analysis/        plot_rob_prf.py, plot_tlb.py; output in analysis/out/
+analysis/        plot_rob_prf.py, plot_tlb.py, plot_tlb_pmu.py; output in analysis/out/
 report/          report source
 ```
 
