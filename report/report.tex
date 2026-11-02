@@ -204,10 +204,9 @@ alternating & 208, 208, 208 & 220, 220, 220 & --- & --- \\
 \end{tabular}
 \caption{Step positions. Sweep resolution is 4, so a step reported at $N$
 lies in $(N-4, N]$. \sk{} runs 1--2 on CPU~2 (socket 0), run 3 on CPU~40
-(socket 1). Published values: Intel 64 and IA-32 Architectures
-Optimization Reference Manual (Skylake client); AMD Software Optimization
-Guide for Family 17h Models 30h and later (Zen 2).}
-% TODO verify: published PRF and ROB sizes against the cited manuals.
+(socket 1). Published values (Coffee Lake uses the Skylake core):
+Skylake ROB and integer PRF~\cite{wc-skl,arxiv-skx}, vector PRF~\cite{arxiv-skx,wp-snc};
+Zen 2~\cite{wc-zen2}.}
 \label{tab:rob}
 \end{table}
 
@@ -359,10 +358,11 @@ L2 TLB, 2~MiB & $\approx$1530 (extrapolates to 1531; run 1 only) & misses $>$1\%
 \caption{Q6 and Q9: TLB levels and sizes. \up{} from two full runs, each
 a coarse sweep plus dense refinements around each step (the second run's
 2~MiB sweep is incomplete; see Repeatability); \sk{} from five sweeps per page size plus
-refinements, and counter runs on both NUMA nodes. Published: Intel
-optimization manual (Skylake client; CL = Coffee Lake), AMD Software
-Optimization Guide for Family 17h Models 30h+ (Zen 2).}
-% TODO verify: published TLB sizes against the cited manuals.
+refinements, and counter runs on both NUMA nodes. Published (CL = Coffee
+Lake, which uses the Skylake core): Skylake~\cite{wc-skl,7cpu-skl}: L1 DTLB
+4-way, STLB 12-way and holding both 4~KiB and 2~MiB entries; Zen
+2~\cite{wc-zen2}: L1 DTLB fully associative for all page sizes, L2 TLB
+holding 4~KiB and 2~MiB entries.}
 \label{tab:tlb}
 \end{table}
 
@@ -559,5 +559,28 @@ python3 analysis/plot_tlb_pmu.py
 
 \paragraph{AI use.} This work was done under Track B with AI assistance
 (Claude, via Claude Code), as detailed in \file{AI_LOG.md}.
+
+% Published specifications only; every measured value in this report comes
+% from the experiments. Checked 2026-11-02.
+\begin{thebibliography}{9}
+\small
+\bibitem{wc-skl} WikiChip, ``Skylake (client) -- Microarchitectures -- Intel.''
+  \url{https://en.wikichip.org/wiki/intel/microarchitectures/skylake_(client)}
+  (ROB 224; integer PRF 180; L1 DTLB 64/32/4 entries for 4~KiB/2~MiB/1~GiB, 4-way;
+  STLB 1536 entries, 12-way, 4~KiB and 2~MiB).
+\bibitem{7cpu-skl} 7-cpu.com, ``Intel Skylake.''
+  \url{https://www.7-cpu.com/cpu/Skylake.html} (same TLB sizes and associativity).
+\bibitem{arxiv-skx} R.~Sch\"one, T.~Ilsche, M.~Bielert, A.~Gocht, D.~Hackenberg,
+  ``Energy Efficiency Features of the Intel Skylake-SP Processor and Their
+  Impact on Performance,'' arXiv:1905.12468, 2019 (ROB 224; integer PRF 180;
+  FP PRF 168; Skylake-SP uses the same core).
+\bibitem{wp-snc} Wikipedia, ``Sunny Cove (microarchitecture)''
+  (vector register file 224 entries, ``up from 168'' in Skylake).
+\bibitem{wc-zen2} WikiChip, ``Zen 2 -- Microarchitectures -- AMD.''
+  \url{https://en.wikichip.org/wiki/amd/microarchitectures/zen_2}
+  (retire queue 224; integer PRF 180; FP PRF 160; L1 DTLB 64 entries, fully
+  associative, 4~KiB/2~MiB/1~GiB; L2 DTLB 2048 entries, 4~KiB and 2~MiB, 1~GiB
+  pages smashed to 2~MiB).
+\end{thebibliography}
 
 \end{document}
