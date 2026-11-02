@@ -11,3 +11,4 @@
 | 2026-11-02 | Claude (Claude Code) | Repeatability runs on `skylark` | Repeated the coarse TLB sweeps on CPU 2 and CPU 40 (both NUMA nodes) and the ROB/PRF sweep on CPU 40; compared all runs | |
 | 2026-11-02 | Claude (Claude Code) | Enclave feasibility on `skylark`; SEV checks in `scripts/machine_info.sh` | Probed SGX/SEV support (cpuinfo, CPUID 0x8000001F, device nodes, kernel log) and documented why no enclave comparison is possible on this machine | |
 | 2026-11-02 | Claude (Claude Code) | `report/report.tex`, `analysis/plot_tlb_pmu.py` | Drafted the LaTeX report from the README and data (published specs marked TODO verify); wrote the DTLB counter plot | |
+| 2026-11-02 | Claude (Claude Code) | Second `upgrade` run | Compared it with run 1; found its 2 MiB sweep truncated by THP fragmentation (1513 verified pages) and excluded it as a repeat of the 2 MiB L2 step; made `plot_tlb.py` plot the most complete sweep; updated README and report | |

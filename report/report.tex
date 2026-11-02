@@ -194,12 +194,12 @@ repetitions per point. Data: \file{data/<host>/rob_prf/}.}
 \begin{tabular}{lcc|cc}
 \toprule
  & \multicolumn{2}{c|}{\textbf{Measured} step at $N$} & \multicolumn{2}{c}{\textbf{Published}} \\
-Filler & \up{} (2 runs) & \sk{} (3 runs) & Coffee Lake & Zen 2 \\
+Filler & \up{} (3 runs) & \sk{} (3 runs) & Coffee Lake & Zen 2 \\
 \midrule
-\texttt{nop} (ROB) & 220, 220 & 224, 220, 220 & 224 & 224 \\
-\texttt{add} (int PRF) & 148, 144 & 116, 116, 116 & 180 & 180 \\
-\texttt{addps} (vec PRF) & 148, 144 & 144, 144, 144 & 168 & 160 \\
-alternating & 208, 208 & 220, 220, 220 & --- & --- \\
+\texttt{nop} (ROB) & 220, 220, 224 & 224, 220, 220 & 224 & 224 \\
+\texttt{add} (int PRF) & 148, 144, 144 & 116, 116, 116 & 180 & 180 \\
+\texttt{addps} (vec PRF) & 148, 144, 148 & 144, 144, 144 & 168 & 160 \\
+alternating & 208, 208, 208 & 220, 220, 220 & --- & --- \\
 \bottomrule
 \end{tabular}
 \caption{Step positions. Sweep resolution is 4, so a step reported at $N$
@@ -349,15 +349,16 @@ access (bottom). Dotted lines mark the published Zen 2 capacities (64 and
  & \up{} (timing) & \sk{} (timing + counters) & \textbf{Published} \\
 \midrule
 TLB levels & 2 & 2 & 2 on both \\
-L1 DTLB, 4~KiB & 64: flat to 64, rises at 65 & 0 misses at 62 pages, misses from 63 & CL: 64; Zen 2: 64 \\
-L1 DTLB, 2~MiB & 32: flat to 32, rises at 33 & identical to 4~KiB (0 at 62, misses from 63) & CL: 32; Zen 2: 64 (shared) \\
-L2 TLB, 4~KiB & $\approx$1530 (ramp extrapolates to 1529) & no sharp edge: misses $>$1\% from $\approx$1024 pages, 50\% at 2435 & CL: 1536; Zen 2: 2048 \\
-L2 TLB, 2~MiB & $\approx$1530 (extrapolates to 1531) & misses $>$1\% from 1408--1576, 50\% at 2704 & CL: 1536 (shared); Zen 2: 2048 \\
+L1 DTLB, 4~KiB & 64: flat to 64, rises at 65 (both runs) & 0 misses at 62 pages, misses from 63 & CL: 64; Zen 2: 64 \\
+L1 DTLB, 2~MiB & 32: flat to 32, rises at 33 (both runs) & identical to 4~KiB (0 at 62, misses from 63) & CL: 32; Zen 2: 64 (shared) \\
+L2 TLB, 4~KiB & $\approx$1530 (extrapolates to 1529 and 1528) & no sharp edge: misses $>$1\% from $\approx$1024 pages, 50\% at 2435 & CL: 1536; Zen 2: 2048 \\
+L2 TLB, 2~MiB & $\approx$1530 (extrapolates to 1531; run 1 only) & misses $>$1\% from 1408--1576, 50\% at 2704 & CL: 1536 (shared); Zen 2: 2048 \\
 1~GiB pages & unavailable & unavailable & --- \\
 \bottomrule
 \end{tabularx}
-\caption{Q6 and Q9: TLB levels and sizes. \up{} from one sweep plus dense
-refinements around each step; \sk{} from five sweeps per page size plus
+\caption{Q6 and Q9: TLB levels and sizes. \up{} from two full runs, each
+a coarse sweep plus dense refinements around each step (the second run's
+2~MiB sweep is incomplete; see Repeatability); \sk{} from five sweeps per page size plus
 refinements, and counter runs on both NUMA nodes. Published: Intel
 optimization manual (Skylake client; CL = Coffee Lake), AMD Software
 Optimization Guide for Family 17h Models 30h+ (Zen 2).}
@@ -379,7 +380,7 @@ Added: L2 TLB miss (page walk) & +3.0 & +3.5 & 25 at 4096 pages, 30 at 16384 & 2
 \bottomrule
 \end{tabular}
 \caption{Q8: cost of TLB misses. \up{}: difference between plateau levels
-(TSC ticks converted at 3.19 GHz). \sk{}: L2-hit cost from
+(TSC ticks converted at 3.19 GHz); the second run gives +1.97 and +3.02~ns for 4~KiB. \sk{}: L2-hit cost from
 \texttt{private} $-$ \texttt{dense}; page-walk cost as $\Delta$cycles $/$
 $\Delta$(L2 misses per access) relative to 1024 pages, from the \texttt{alias}
 curve (4~KiB) and \texttt{private} $-$ \texttt{dense} (2~MiB). At the
@@ -454,7 +455,17 @@ Huge pages increase reach by $512\times$: on \up{} the L2 TLB covers about
 alone covers 256~KiB vs.\ 128~MiB. The cost of each kind of miss is
 about the same for both page sizes on both machines (Table~\ref{tab:q8}).
 
-\paragraph{Repeatability.} On \sk{}, five coarse sweeps per page size (on
+\paragraph{Repeatability.} On \up{}, a second full run (Nov.~2) repeats
+every ROB/PRF step within the sweep resolution of 4, and every 4~KiB TLB
+result (L1 at 64, L2 extrapolating to 1528 vs.\ 1529, miss costs within
+0.07~ns). Its 2~MiB sweep is not a valid repeat of the L2 step: memory was
+fragmented, only 1513 of 2048 requested huge pages could be verified, and
+the sweep stops below the L2 TLB. The verified pages also left gaps in the
+virtual address range, and their L2 misses begin early (from about 1218
+pages instead of about 1548), as expected if the L2 TLB set index comes
+from virtual-address bits. The 2~MiB L1 result (32) does repeat. Figure~\ref{fig:tlb}
+plots the most complete sweep for each page size.
+On \sk{}, five coarse sweeps per page size (on
 CPU~2 / NUMA node 0 and CPU~40 / node 1) agree within 0.5 cycles for the
 4~KiB \texttt{alias} curve at every checked point from 56 to 16384 pages,
 and within 1.6 cycles for 2~MiB at 4096 pages. 4~KiB \texttt{private} at

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Plot TLB sweeps for every machine under data/ and locate TLB levels.
 
-Uses the newest data/<host>/tlb/<size>_*.csv per host and page size.
+Plots the most complete data/<host>/tlb/<size>_*.csv per host and page size
+(largest page count, newest on ties), so a run cut short by too few
+verified huge pages does not replace a full one.
 Writes analysis/out/tlb.png (rows = hosts, columns = page sizes) and
 analysis/out/tlb_levels.csv.
 
@@ -100,6 +102,16 @@ def newest(hostdir, size):
     return files[-1] if files else None
 
 
+def most_complete(hostdir, size):
+    """Sweep reaching the most pages, newest on ties (for plotting only:
+    run_all's refinement ranges must come from the run just made)."""
+    def reach(path):
+        with open(path) as f:
+            return max(int(r["pages"]) for r in csv.DictReader(f))
+    files = sorted((hostdir / "tlb").glob(f"{size}_*.csv"))
+    return max(files, key=lambda f: (reach(f), f.name)) if files else None
+
+
 def print_refine_ranges(host):
     """Print `size lo:hi:step` for a dense linear sweep around every step
     found in the newest coarse sweeps; scripts/run_all.sh feeds these back
@@ -166,7 +178,7 @@ def main():
     hosts = [h for h in sorted((ROOT / "data").iterdir())
              if (h / "tlb").is_dir()] if len(sys.argv) < 2 else \
             [ROOT / "data" / h for h in sys.argv[1:]]
-    grid = [(h, [newest(h, s) for s in SIZES]) for h in hosts]
+    grid = [(h, [most_complete(h, s) for s in SIZES]) for h in hosts]
     grid = [(h, fs) for h, fs in grid if any(fs)]
     if not grid:
         sys.exit("no TLB data found under data/*/tlb/")

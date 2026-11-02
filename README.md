@@ -87,11 +87,11 @@ int and vec curves stepping well before the `nop` curve shows the register
 files, not the ROB, are the limit. The mixed curve stepping later than
 either one alone shows they are separate pools.
 
-Results on `upgrade` (two independent runs, median of 5 and 9 reps, TSC ticks):
+Results on `upgrade` (three independent runs, 2026-10-29 ×2 and 2026-11-02, median of 5–9 reps, TSC ticks; steps 220/220/224, 148/144/144, 148/144/148, 208/208/208):
 
 | Filler | Step at N | Published spec (Skylake family) |
 |---|---|---|
-| nop | ~220 | ROB 224 |
+| nop | ~220–224 | ROB 224 |
 | int | ~144–148 | 180 integer physical registers |
 | vec | ~144–148 | 168 vector physical registers |
 | mix | ~208 | — |
@@ -133,16 +133,24 @@ checked to be a real huge page before use; pages the kernel backs with
 4 KiB pages are discarded so page sizes never mix. `run_all.sh` does a
 coarse geometric sweep, then a dense linear sweep around each detected step.
 
-Results on `upgrade` (TSC 3.19 GHz):
+Results on `upgrade` (TSC 3.19 GHz; two full runs, 2026-10-29 and 2026-11-02):
 
 | Level | 4 KiB pages | 2 MiB pages | Published (Skylake family) |
 |---|---|---|---|
-| L1 DTLB entries (Q6) | **64** (flat to 64, rises at 65) | **32** (flat to 32, rises at 33) | 64 (4K), 32 (2M) |
-| L2 TLB / STLB entries (Q6) | **~1530** (ramp extrapolates to 1529) | **~1530** (extrapolates to 1531) | 1536, shared 4K/2M |
+| L1 DTLB entries (Q6) | **64** (flat to 64, rises at 65; both runs) | **32** (flat to 32, rises at 33; both runs) | 64 (4K), 32 (2M) |
+| L2 TLB / STLB entries (Q6) | **~1530** (extrapolates to 1529, then 1528) | **~1530** (extrapolates to 1531; run 1 only, see below) | 1536, shared 4K/2M |
 | Access cost, L1 TLB hit | 1.37 ns | 1.34 ns | — |
-| Added cost of an L1 TLB miss that hits the L2 TLB (Q8) | +2.0 ns | +2.0 ns | — |
-| Added cost of an L2 TLB miss, page walk with cached page tables (Q8) | +3.0 ns | +3.5 ns | — |
+| Added cost of an L1 TLB miss that hits the L2 TLB (Q8) | +2.0 ns (run 2: +1.97) | +2.0 ns | — |
+| Added cost of an L2 TLB miss, page walk with cached page tables (Q8) | +3.0 ns (run 2: +3.02) | +3.5 ns | — |
 | 1 GiB pages (Q9) | — | — | Unavailable: no 1 GiB hugetlbfs pool, needs root |
+
+Run 2 (2026-11-02) could verify only 1513 of 2048 requested 2 MiB pages
+(2583 fell back to 4 KiB and were discarded, memory was fragmented), so its
+2 MiB sweep stops below the L2 TLB and is not a repeat of that step. Its
+verified pages also have gaps in virtual address space, and its 2 MiB L2
+misses begin early (rising from ~1218 pages instead of ~1548), as expected
+if the L2 TLB set index comes from virtual-address bits. `plot_tlb.py`
+therefore plots the most complete sweep (run 1) for 2 MiB.
 
 Findings so far:
 - **Two TLB levels.** The same ~1536-entry L2 TLB holds both 4 KiB and 2 MiB
