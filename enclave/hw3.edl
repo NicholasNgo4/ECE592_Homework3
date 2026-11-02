@@ -1,0 +1,18 @@
+/* ECALL interface: thin wrappers around enclave/core.c (see core.h). */
+enclave {
+    trusted {
+        public int ecall_rob_setup(uint64_t mib);
+        public int ecall_rob_count(void);
+        public void ecall_rob_info(int k, [out, size=8] char *kind, [out] int *n);
+        public void ecall_rob_run(int k, uint64_t iters);
+
+        public int ecall_tlb_setup(uint64_t max_pages);
+        public void ecall_tlb_prepare(int pattern, uint64_t pages);
+        public void ecall_tlb_run(uint64_t pages, uint64_t total);
+
+        /* Cost of one ECALL round trip, subtracted from every timing. */
+        public void ecall_empty(void);
+        /* Executes RDTSCP inside the enclave; faults where SGX forbids it. */
+        public uint64_t ecall_rdtsc_probe(void);
+    };
+};

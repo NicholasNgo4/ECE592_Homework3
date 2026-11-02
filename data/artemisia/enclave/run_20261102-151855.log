@@ -1,0 +1,22 @@
+enclave comparison on artemisia, cpu 12, 2 rounds, 20261102-151855
+ 15:18:56 up 7 days,  3:43,  7 users,  load average: 4.62, 4.66, 3.51
+native: RDTSCP executed, back-to-back delta 38 ticks
+sgx: RDTSCP executed, back-to-back delta 38 ticks
+== round 1: rob native
+native, cpu 12, TSC 2.000 GHz, empty-call overhead 42 ticks
+== round 1: rob sgx
+sgx, cpu 12, TSC 2.000 GHz, empty-call overhead 9630 ticks
+== round 1: tlb native
+native, cpu 12, TSC 2.000 GHz, empty-call overhead 42 ticks
+== round 1: tlb sgx
+sgx, cpu 12, TSC 2.000 GHz, empty-call overhead 9578 ticks
+== round 2: rob sgx
+sgx, cpu 12, TSC 2.000 GHz, empty-call overhead 9606 ticks
+== round 2: rob native
+native, cpu 12, TSC 2.000 GHz, empty-call overhead 42 ticks
+== round 2: tlb sgx
+sgx, cpu 12, TSC 2.000 GHz, empty-call overhead 9592 ticks
+== round 2: tlb native
+native, cpu 12, TSC 2.000 GHz, empty-call overhead 42 ticks
+ 15:19:41 up 7 days,  3:44,  7 users,  load average: 4.62, 4.65, 3.56
+Done. Raw data in data/artemisia/enclave/. Plot with: python3 analysis/plot_enclave.py

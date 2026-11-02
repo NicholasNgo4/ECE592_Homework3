@@ -64,7 +64,8 @@ Q\# & Question & Points \\
 Q4 and Q5 share one experiment (Section~\ref{sec:rob}); Q6, Q8 and Q9 share
 another (Section~\ref{sec:tlb}). Every experiment was run on two course
 machines, \up{} (Intel) and \sk{} (AMD), and the results are presented side by
-side. Source code, raw data, plotting scripts and reproduction instructions
+side. The enclave comparison ran on a third, SGX-enabled machine
+(Section~\ref{sec:enclave}). Source code, raw data, plotting scripts and reproduction instructions
 are in the accompanying ZIP (Appendix~\ref{app:repro}); AI use is recorded in
 \file{AI_LOG.md}.
 
@@ -95,7 +96,9 @@ perf counters & \textbf{No} (\texttt{perf\_event\_paranoid}=4) & Yes (\texttt{pe
 Enclave & \textbf{No}: SGX not enabled (no \texttt{/dev/sgx*}) & \textbf{No}: AMD has no SGX; SEV disabled by BIOS \\
 \bottomrule
 \end{tabularx}
-\caption{Machines. Full records: \file{data/<host>/machine_info.txt}.}
+\caption{Machines. Full records: \file{data/<host>/machine_info.txt}. A third
+machine with SGX, \texttt{artemisia}, was used only for the enclave
+comparison (Section~\ref{sec:enclave}).}
 \label{tab:machines}
 \end{table}
 
@@ -479,8 +482,137 @@ cache effect, which is why page-walk costs use \texttt{alias}.
 \label{sec:enclave}
 
 The assignment asks for each experiment to be run inside and outside an
-enclave on the same enclave-capable machine. This was not possible on
-either machine:
+enclave on the same enclave-capable machine. Neither of the two main
+machines can run one (Section~\ref{sec:noenclave}), so the comparison was
+done on a third course machine, \texttt{artemisia}, which has Intel SGX
+enabled. It is used only for this comparison; the two-machine results above
+come from \up{} and \sk{}.
+
+\subsection{Platform}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+CPU & Intel Xeon Gold 5420+, Sapphire Rapids (Golden Cove cores), 2 $\times$ 28 cores, microcode \texttt{0x2b000685} \\
+OS & RHEL 9.8, Linux 6.17.8, in-kernel SGX driver (\texttt{/dev/sgx\_enclave}), flexible launch control \\
+EPC & two sections of about 1~GiB each \\
+SGX software & Intel SGX SDK and PSW 2.23.100.2, hardware mode \\
+Enclave & debug enclave signed with a locally generated key; 384~MiB heap; one thread \\
+Runs & CPU~12 (its SMT sibling is offline); TSC 2.000~GHz; 4 rounds per mode \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Gramine 1.6.2, which can run an unmodified binary inside an enclave, is also
+installed, but its Python package (\texttt{graminelibos}) is missing, so its
+manifest and signing tools fail. The comparison therefore uses the SDK
+directly.
+
+\subsection{Method}
+
+The experiment code (\file{enclave/core.c}) is compiled twice from the same
+source, with the same generated ROB/PRF kernels and the same TLB loop: into
+an enclave, called through ECALLs, and into a normal process. Both builds use
+4~KiB pages (enclave memory has no huge pages; the native build uses
+\texttt{MADV\_NOHUGEPAGE}), the same buffer construction and the same random
+seeds, so the only difference is whether the code runs inside the enclave.
+Every call is timed from outside with the TSC in both modes, and the median
+cost of an empty call is subtracted:
+
+\begin{lstlisting}[language=C,caption={Timing one ROB measurement (\file{enclave/app.c}); \texttt{rob\_run} is an ECALL in the SGX build and a direct call in the native build.}]
+uint64_t t0 = tsc_now();
+rob_run(k, iters);                 /* 2000 loop iterations */
+uint64_t t1 = tsc_now();
+tsc_per_iter = (double)(t1 - t0 - ovh) / iters;   /* ovh: median empty call */
+\end{lstlisting}
+
+An ECALL round trip costs about 9{,}600 ticks (4.8~$\mu$s), against 42
+ticks for a native call. Each timed call covers 0.6--1.4~M ticks (ROB) or at
+least 400{,}000 loads (TLB), so the subtraction is a small correction.
+Executing RDTSCP inside the enclave also works on this CPU (a separate
+probe), unlike SGX1 processors where it faults; timing outside was kept so
+both modes are measured identically.
+
+What could not be done inside the enclave: 2~MiB pages (EPC has 4~KiB pages
+only), so Q9's page-size comparison has no enclave counterpart; and the TLB
+\texttt{alias} pattern (it maps one physical page many times through a
+\texttt{memfd}), so the TLB signal is \texttt{private} $-$ \texttt{dense} in
+both modes. perf counters were not used in either mode.
+
+\subsection{Results}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{enclave.png}
+\caption{\texttt{artemisia}: native (solid) vs.\ SGX enclave (dashed or
+orange), medians of 4 rounds per mode. Left: ROB/PRF sweep. Right: TLB
+translation cost (\texttt{private} $-$ \texttt{dense}) and the
+\texttt{dense} cache-only control. Data: \file{data/artemisia/enclave/}.}
+\label{fig:enclave}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc|c}
+\toprule
+ & \multicolumn{2}{c|}{\textbf{Measured} (TSC ticks at 2.0~GHz)} & \textbf{Published} \\
+ & Native & SGX enclave & Golden Cove \\
+\midrule
+\texttt{nop} step (ROB) & 496--500 & 496--500 & 512 \\
+\texttt{add} step (integer PRF) & 216 & 216 & 280 \\
+\texttt{addps} step (vector PRF) & 244--248 & \textbf{260} & 332 \\
+alternating step & 428 & 432 & --- \\
+ROB iteration, before / after the \texttt{nop} step & $\approx$276 / 560--590 & $\approx$340 / 690--705 & --- \\
+L1 DTLB (refined knee) & 97 & 96 & 96 \\
+L2 TLB onset (refined) & 1720--1744 & 1552--1576 & 2048$^\ast$ \\
+L1 TLB miss, L2 TLB hit (128 pages) & +5.1 & +5.1 & +7 cycles \\
+Beyond the L2 TLB, 4096 pages & 17.3 & \textbf{38.5} & --- \\
+Beyond the L2 TLB, 16384 pages & 18.2 & \textbf{73.5} & --- \\
+\bottomrule
+\end{tabular}
+\caption{Enclave comparison on \texttt{artemisia}. Step positions agree
+across all 4 rounds in each mode. The \texttt{dense} control is identical in
+both modes at every point. Published: ROB~\cite{toms-gc,cnc-gc}, integer
+PRF~\cite{cnc-spr-vrf}, vector PRF~\cite{wp-gc}, L1 DTLB~\cite{toms-gc},
+L2 TLB hit cost~\cite{cnc-spr}; $^\ast$STLB size from a secondary
+source only~\cite{blog-stlb}.}
+\label{tab:enclave}
+\end{table}
+
+\subsection{Interpretation}
+
+\begin{itemize}
+\item \textbf{Core resources are unchanged inside the enclave.} The ROB
+  step (about 500, against a published 512) and the integer register file
+  step are identical in both modes, and so are the L1 DTLB size (96--97,
+  published 96) and the cost of an L2 TLB hit.
+\item \textbf{DRAM accesses are 20--22\% slower inside the enclave.} Both
+  plateaus of the ROB curves rise (one and two memory latencies per
+  iteration), consistent with SGX encrypting enclave memory on every cache
+  miss. Cache hits are not slower: the \texttt{dense} control, which stays in
+  the caches, is identical in both modes.
+\item \textbf{Page walks are 2--4$\times$ more expensive inside the enclave},
+  and the penalty grows with the number of pages touched (Figure~\ref{fig:enclave},
+  right). Hits in either TLB level cost the same. This is consistent with
+  SGX validating each new translation against the Enclave Page Cache Map
+  (EPCM), whose entries must themselves be fetched and cached. The L2 TLB
+  onset appears somewhat earlier inside the enclave, because the more
+  expensive walks make the first misses visible sooner.
+\item \textbf{The vector register file step moves 16 later inside the
+  enclave} (244--248 $\to$ 260) while the integer step does not. On Ice Lake
+  server, touching any of the AVX-512 registers ZMM16--31 reserves 16 extra
+  physical vector registers, and Golden Cove may behave the same
+  way~\cite{cnc-spr-vrf}. A normal Linux process touches ZMM16--31 through
+  glibc's AVX-512 string functions; the enclave code here never does, and
+  enclave entry starts from clean extended register state. This explains
+  the size of the shift, but I did not test it directly.
+\end{itemize}
+
+\subsection{Machines where an enclave run was not possible}
+\label{sec:noenclave}
+
 \begin{itemize}
 \item \up{}: the i7-8700 supports SGX1 in hardware, but there is no
   \texttt{/dev/sgx\_enclave} or \texttt{/dev/isgx}, so SGX is not enabled in
@@ -495,14 +627,6 @@ either machine:
   would be an encrypted VM vs.\ a plain VM rather than inside vs.\ outside an
   enclave within one process.
 \end{itemize}
-The experiments were built to be enclave-ready: all timed code is
-pre-generated assembly (no JIT, so no writable+executable pages are
-needed), and the kernels could be linked into an enclave unchanged. Expected
-challenges, had an SGX machine been available: \texttt{rdtsc} faults inside
-SGX1 enclaves, so timing would be done from outside with many iterations per
-enclave call; enclave memory uses 4~KiB pages only, so the 2~MiB part of Q9
-could not be repeated inside; and the \texttt{alias} pattern needs
-\texttt{mmap} of a \texttt{memfd}, which is unavailable inside an enclave.
 
 % ---------------------------------------------------------------------------
 \section{Open questions and limitations}
@@ -521,8 +645,13 @@ could not be repeated inside; and the \texttt{alias} pattern needs
 \item \textbf{No counters on \up{}.} Its TLB conclusions rest on timing
   alone, and its core clock during runs is unknown, so its results are in
   TSC ticks and ns.
-\item \textbf{1 GiB pages and enclaves} were unavailable on both machines
-  (Sections~\ref{sec:machines} and~\ref{sec:enclave}).
+\item \textbf{1 GiB pages} were unavailable on both machines
+  (Section~\ref{sec:machines}).
+\item \textbf{Enclave comparison.} It ran on a third machine (\texttt{artemisia}),
+  in a debug enclave, for ROB/PRF and 4~KiB TLB only: 2~MiB pages and the
+  \texttt{alias} pattern cannot exist in enclave memory. The vector-register
+  and EPCM explanations in Section~\ref{sec:enclave} are not tested
+  directly.
 \end{itemize}
 
 % ---------------------------------------------------------------------------
@@ -540,6 +669,7 @@ Path & Contents \\
 \file{exp/rob_prf/} & Q4/Q5 kernel generator and sweep driver \\
 \file{exp/tlb/} & Q6/Q8/Q9 timed loop and sweep driver \\
 \file{scripts/} & \file{run_all.sh} (all experiments), \file{tlb_pmu.sh} (counter sweeps), \file{machine_info.sh} \\
+\file{enclave/} & Enclave comparison: shared experiment core, ECALL interface, SGX and native drivers, \file{run_enclave.sh} \\
 \file{analysis/} & Plotting and step-detection scripts; figures in \file{analysis/out/} \\
 \file{data/<host>/} & Raw CSVs, run logs and \file{machine_info.txt} for each machine \\
 \file{README.md} & Full reproduction instructions \\
@@ -555,6 +685,8 @@ scripts/run_all.sh 2          # build, record machine info, run all sweeps on CP
 scripts/tlb_pmu.sh 2          # AMD only, needs perf: DTLB counter sweeps
 python3 analysis/plot_rob_prf.py && python3 analysis/plot_tlb.py
 python3 analysis/plot_tlb_pmu.py
+enclave/run_enclave.sh 12 2   # SGX machine with the Intel SGX SDK: enclave vs native
+python3 analysis/plot_enclave.py
 \end{lstlisting}
 
 \paragraph{AI use.} This work was done under Track B with AI assistance
@@ -581,6 +713,23 @@ python3 analysis/plot_tlb_pmu.py
   (retire queue 224; integer PRF 180; FP PRF 160; L1 DTLB 64 entries, fully
   associative, 4~KiB/2~MiB/1~GiB; L2 DTLB 2048 entries, 4~KiB and 2~MiB, 1~GiB
   pages smashed to 2~MiB).
+\bibitem{toms-gc} Tom's Hardware, ``Intel Architecture Day 2021: Golden Cove,''
+  \url{https://www.tomshardware.com/features/intel-architecture-day-2021-intel-unveils-alder-lake-golden-cove-and-gracemont-cores/4}
+  (ROB 512; L1 DTLB 96 entries).
+\bibitem{cnc-gc} C.~Lam, ``Popping the Hood on Golden Cove,'' Chips and Cheese, 2021,
+  \url{https://chipsandcheese.com/p/popping-the-hood-on-golden-cove} (ROB 512).
+\bibitem{wp-gc} Wikipedia, ``Golden Cove'' (vector register file 332 entries).
+\bibitem{cnc-spr-vrf} Chips and Cheese, ``Golden Cove's Vector Register File:
+  Checking with Official (SPR) Data,''
+  \url{https://chipsandcheese.com/p/golden-coves-vector-register-file-checking-with-official-spr-data}
+  (integer register file 280, 288 per SPR slides; on Ice Lake server, touching
+  ZMM16--31 reserves 16 extra vector registers).
+\bibitem{cnc-spr} Chips and Cheese, ``Sapphire Rapids: Golden Cove Hits Servers,'' 2023,
+  \url{https://chipsandcheese.com/2023/03/12/a-peek-at-sapphire-rapids/}
+  (L2 TLB hit adds 7 cycles).
+\bibitem{blog-stlb} junxnone, ``Mem TLB,''
+  \url{https://github.com/junxnone/opt/issues/73} (Sapphire Rapids STLB 2048
+  entries, attributed to Intel's optimization manual; not verified there).
 \end{thebibliography}
 
 \end{document}

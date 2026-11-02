@@ -1,0 +1,15 @@
+<!-- Heap holds the experiment buffers: 2 x 128 MiB pointer chases for
+     ROB/PRF, or 64 MiB of private pages for the TLB sweep. One TCS: the
+     driver is single-threaded. Debug enclave (DisableDebug=0): signed with
+     a locally generated key; memory is still encrypted EPC. -->
+<EnclaveConfiguration>
+  <ProdID>0</ProdID>
+  <ISVSVN>0</ISVSVN>
+  <StackMaxSize>0x40000</StackMaxSize>
+  <HeapMaxSize>0x18000000</HeapMaxSize>
+  <TCSNum>1</TCSNum>
+  <TCSPolicy>1</TCSPolicy>
+  <DisableDebug>0</DisableDebug>
+  <MiscSelect>0</MiscSelect>
+  <MiscMask>0xFFFFFFFF</MiscMask>
+</EnclaveConfiguration>

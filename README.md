@@ -7,11 +7,11 @@ Due **November 3, 2026, 11:59 PM Eastern**. Assignment: [Homework_3.pdf](Homewor
 
 | Q# | Question | Points | Subsystem | Status |
 |---|---|---|---|---|
-| 4 | Reverse engineer the ROB size | 30 | OoO back end | `upgrade` + `skylark` done |
-| 5 | Reverse engineer the physical register file size; identify the register class | 35 | OoO back end / renaming | `upgrade` + `skylark` done |
-| 6 | Reverse engineer the number of TLB levels and the size of each level | 35 | Virtual memory | `upgrade` + `skylark` done (skylark 4 KiB L2 step is a gradual ramp) |
-| 8 | Measure the cost of a TLB miss | 10 | Virtual memory | `upgrade` + `skylark` done |
-| 9 | Compare TLB behavior across supported page sizes | 10 | Virtual memory | 4 KiB + 2 MiB done on `upgrade` + `skylark`; 1 GiB unavailable on both (no pool) |
+| 4 | Reverse engineer the ROB size | 30 | OoO back end | `upgrade` + `skylark` done; enclave vs native on `artemisia` |
+| 5 | Reverse engineer the physical register file size; identify the register class | 35 | OoO back end / renaming | `upgrade` + `skylark` done; enclave vs native on `artemisia` |
+| 6 | Reverse engineer the number of TLB levels and the size of each level | 35 | Virtual memory | `upgrade` + `skylark` done (skylark 4 KiB L2 step is a gradual ramp); 4 KiB enclave vs native on `artemisia` |
+| 8 | Measure the cost of a TLB miss | 10 | Virtual memory | `upgrade` + `skylark` done; enclave vs native on `artemisia` |
+| 9 | Compare TLB behavior across supported page sizes | 10 | Virtual memory | 4 KiB + 2 MiB done on `upgrade` + `skylark`; 1 GiB unavailable on both (no pool); 2 MiB impossible inside an enclave (EPC is 4 KiB only) |
 | | **Total** | **120** | | |
 
 Stretch goal if time allows: **Q10, BTB capacity (20 pts)**, which would add the front end.
@@ -57,7 +57,7 @@ reproduction instructions, and the AI-use log.
 |---|---|---|---|---|---|---|
 | upgrade | Intel Core i7-8700 | Coffee Lake (Skylake family) | No `/dev/sgx` (not enabled) | No (`perf_event_paranoid=4`) | 2 MiB via THP; no 1 GiB pool | Machine 1 |
 | skylark | AMD EPYC 7532 (2 × 32 cores, SMT on), family 23 model 49, microcode 0x830107d | Zen 2 (Rome) | No: AMD has no SGX; SEV present in silicon but disabled by BIOS, no `/dev/kvm` (see [enclave/README.md](enclave/README.md)) | Yes (`perf_event_paranoid=2`; core cycles recorded) | 2 MiB via THP; no 1 GiB pool | Machine 2 |
-| _TBD_ | | | Needs SGX enabled | | | Enclave comparison |
+| artemisia | Intel Xeon Gold 5420+ (2 × 28 cores) | Sapphire Rapids (Golden Cove) | **Yes**: `/dev/sgx_enclave`, Intel SGX SDK 2.23 (Gramine installed but broken) | Yes (`perf_event_paranoid=2`) | not used | Enclave comparison only (native vs SGX, same machine) |
 
 `data/<host>/machine_info.txt` holds the full record for each machine
 (lscpu, microcode, kernel, SGX, perf access, huge-page pools, SMT, load).
@@ -221,7 +221,25 @@ Findings on `skylark`:
 
 ### Enclave comparison ([enclave/](enclave/))
 
-Planned. Not possible on `upgrade` (SGX not enabled) or `skylark` (AMD: no SGX; SEV disabled by BIOS and VM-level only). See [enclave/README.md](enclave/README.md).
+Done on `artemisia` (Sapphire Rapids, SGX enabled). The experiment code
+(`enclave/core.c`) is compiled into an SGX enclave and into a normal
+process from the same source, with the same kernels and 4 KiB pages, and
+both are timed from outside with the ECALL cost (~9,600 TSC ticks)
+subtracted. 4 rounds per mode on CPU 12:
+
+| | Native | SGX enclave |
+|---|---|---|
+| ROB (`nop` step) / int PRF / vec PRF / alternating | 496–500 / 216 / 244–248 / 428 | 496–500 / 216 / **260** / 432 |
+| DRAM-bound ROB iteration | ~276 ticks | ~340 ticks (**+20–22%**) |
+| L1 DTLB / L2 TLB onset | 97 / ~1730 | 96 / ~1565 |
+| L2 TLB hit cost | +5.1 ticks | +5.1 ticks |
+| Beyond L2 TLB, 4096 / 16384 pages | 17.3 / 18.2 ticks | **38.5 / 73.5** |
+
+Same ROB, integer PRF, TLB sizes and cache-hit costs; DRAM accesses 20%
+slower (memory encryption), page walks 2–4× slower (EPCM checks), and the
+vector PRF step 16 later (likely ZMM16–31 untouched inside the enclave).
+Not possible on `upgrade` (SGX not enabled) or `skylark` (AMD: no SGX; SEV
+disabled by BIOS and VM-level only). Details: [enclave/README.md](enclave/README.md).
 
 ## Repository layout
 
@@ -229,11 +247,11 @@ Planned. Not possible on `upgrade` (SGX not enabled) or `skylark` (AMD: no SGX; 
 common/          shared helpers: rdtscp timing, TSC calibration, CPU pinning, perf cycles, pointer-chase buffers
 exp/rob_prf/     Q4/Q5: kernel generator (gen_kernels.py) + sweep driver (main.c)
 exp/tlb/         Q6/Q8/Q9: dependent-load kernel (tlb_chase.S) + sweep driver (main.c)
-enclave/         SGX wrapper for the same kernels (planned)
+enclave/         SGX enclave + native twin of the same experiment code (Intel SGX SDK), run_enclave.sh
 scripts/         run_all.sh (build + run everything), machine_info.sh,
                  tlb_pmu.sh (TLB sweeps with AMD DTLB miss counters)
 data/<host>/     raw CSVs, run logs, machine_info.txt; one folder per machine
-analysis/        plot_rob_prf.py, plot_tlb.py, plot_tlb_pmu.py; output in analysis/out/
+analysis/        plot_rob_prf.py, plot_tlb.py, plot_tlb_pmu.py, plot_enclave.py; output in analysis/out/
 report/          report source
 ```
 

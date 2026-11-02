@@ -5,3 +5,10 @@ report/*.log
 report/*.out
 report/*.toc
 report/*.synctex.gz
+enclave/enclave_private.pem
+enclave/hw3_sgx
+enclave/hw3_native
+enclave/enclave.so
+enclave/enclave.signed.so
+enclave/hw3_t.*
+enclave/hw3_u.*

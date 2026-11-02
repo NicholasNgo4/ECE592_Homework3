@@ -1,0 +1,90 @@
+# hostname
+artemisia.ece.ncsu.edu
+# date
+2026-11-02T15:20:47-05:00
+# kernel
+Linux artemisia.ece.ncsu.edu 6.17.8-1.el9.elrepo.x86_64 #1 SMP PREEMPT_DYNAMIC Thu Nov 13 18:02:25 EST 2025 x86_64 x86_64 x86_64 GNU/Linux
+# lscpu
+Architecture:                            x86_64
+CPU op-mode(s):                          32-bit, 64-bit
+Address sizes:                           52 bits physical, 57 bits virtual
+Byte Order:                              Little Endian
+CPU(s):                                  112
+On-line CPU(s) list:                     0-67,69-111
+Off-line CPU(s) list:                    68
+Vendor ID:                               GenuineIntel
+Model name:                              Intel(R) Xeon(R) Gold 5420+
+CPU family:                              6
+Model:                                   143
+Thread(s) per core:                      2
+Core(s) per socket:                      28
+Socket(s):                               2
+Stepping:                                8
+CPU(s) scaling MHz:                      94%
+CPU max MHz:                             4100.0000
+CPU min MHz:                             0.0000
+BogoMIPS:                                4000.00
+Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cat_l2 cdp_l3 intel_ppin cdp_l2 ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust sgx bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local split_lock_detect avx_vnni avx512_bf16 wbnoinvd dtherm ida arat pln pts vnmi avx512vbmi umip pku ospke waitpkg avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq la57 rdpid bus_lock_detect cldemote movdiri movdir64b enqcmd sgx_lc fsrm md_clear serialize tsxldtrk pconfig arch_lbr ibt amx_bf16 avx512_fp16 amx_tile amx_int8 flush_l1d arch_capabilities
+Virtualization:                          VT-x
+L1d cache:                               2.6 MiB (56 instances)
+L1i cache:                               1.8 MiB (56 instances)
+L2 cache:                                112 MiB (56 instances)
+L3 cache:                                105 MiB (2 instances)
+NUMA node(s):                            2
+NUMA node0 CPU(s):                       0-27,56-67,69-83
+NUMA node1 CPU(s):                       28-55,84-111
+Vulnerability Gather data sampling:      Not affected
+Vulnerability Ghostwrite:                Not affected
+Vulnerability Indirect target selection: Not affected
+Vulnerability Itlb multihit:             Not affected
+Vulnerability L1tf:                      Not affected
+Vulnerability Mds:                       Not affected
+Vulnerability Meltdown:                  Not affected
+Vulnerability Mmio stale data:           Not affected
+Vulnerability Old microcode:             Vulnerable
+Vulnerability Reg file data sampling:    Not affected
+Vulnerability Retbleed:                  Not affected
+Vulnerability Spec rstack overflow:      Not affected
+Vulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:                Mitigation; Enhanced / Automatic IBRS; IBPB conditional; PBRSB-eIBRS SW sequence; BHI BHI_DIS_S
+Vulnerability Srbds:                     Not affected
+Vulnerability Tsa:                       Not affected
+Vulnerability Tsx async abort:           Not affected
+Vulnerability Vmscape:                   Mitigation; IBPB before exit to userspace
+# microcode
+microcode	: 0x2b000685
+# cpu family/model/stepping
+cpu family	: 6
+model		: 143
+model name	: Intel(R) Xeon(R) Gold 5420+
+# perf_event_paranoid
+2
+# transparent hugepages
+[always] madvise never
+# hugepage pools
+hugepages-1048576kB: total=0 free=0
+hugepages-2048kB: total=0 free=0
+# SGX
+cpuinfo flags: sgx sgx_lc 
+ls: cannot access '/dev/isgx': No such file or directory
+crw-rw-rw-. 1 root sgx     10, 258 Oct 28 18:32 /dev/sgx_enclave
+crw-rw----. 1 root sgx_prv 10, 257 Oct 26 12:35 /dev/sgx_provision
+crw-rw----. 1 root sgx     10, 259 Oct 26 12:35 /dev/sgx_vepc
+
+/dev/sgx:
+total 0
+lrwxrwxrwx. 1 root root 14 Oct 28 18:32 enclave -> ../sgx_enclave
+lrwxrwxrwx. 1 root root 16 Oct 26 12:35 provision -> ../sgx_provision
+# AMD SEV (VM-level memory encryption, AMD's closest analogue)
+cpuinfo flags: 
+ls: cannot access '/dev/sev': No such file or directory
+crw-rw-rw-. 1 root kvm 10, 232 Oct 26 12:35 /dev/kvm
+kvm_amd sev param: cat: /sys/module/kvm_amd/parameters/sev: No such file or directory
+dmesg: no SEV lines (or not readable)
+# SMT active
+1
+# CPU frequency governor
+performance
+# load at collection time
+ 15:20:47 up 7 days,  3:45,  7 users,  load average: 4.55, 4.59, 3.61

@@ -1,0 +1,17 @@
+host,test,mode,kind,step_n,rounds
+artemisia,rob,native,nop,500,4
+artemisia,rob,native,int,216,4
+artemisia,rob,native,vec,248,4
+artemisia,rob,native,mix,428,4
+artemisia,rob,sgx,nop,500,4
+artemisia,rob,sgx,int,216,4
+artemisia,rob,sgx,vec,260,4
+artemisia,rob,sgx,mix,432,4
+artemisia,tlb,native,private-dense@128,5.11,4
+artemisia,tlb,native,private-dense@1024,5.24,4
+artemisia,tlb,native,private-dense@4096,17.32,4
+artemisia,tlb,native,private-dense@16384,18.21,4
+artemisia,tlb,sgx,private-dense@128,5.13,4
+artemisia,tlb,sgx,private-dense@1024,5.65,4
+artemisia,tlb,sgx,private-dense@4096,38.47,4
+artemisia,tlb,sgx,private-dense@16384,73.52,4
