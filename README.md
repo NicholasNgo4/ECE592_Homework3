@@ -14,7 +14,7 @@ Due **November 3, 2026, 11:59 PM Eastern**. Assignment: [Homework_3.pdf](Homewor
 | 9 | Compare TLB behavior across supported page sizes | 10 | Virtual memory | 4 KiB + 2 MiB done on `upgrade` + `skylark`; 1 GiB unavailable on both (no pool); 2 MiB impossible inside an enclave (EPC is 4 KiB only) |
 | | **Total** | **120** | | |
 
-Stretch goal if time allows: **Q10, BTB capacity (20 pts)**, which would add the front end.
+Q10 (BTB capacity, 20 pts) was a stretch goal and was not attempted.
 
 **Out of scope:** ARM (Thunderbird, Neoverse N1). Track B only needs two
 machines per question, and the x86 machines are enough for both the
@@ -39,13 +39,13 @@ has no SGX equivalent for the enclave comparison.
 
 For **every** selected question:
 
-- [ ] Run on **two** course machines and present results side by side
-- [ ] Explain the method and any differences between the machines
-- [ ] Include a code snippet and the methodology (what is tested, how, what is measured, how it supports the conclusion)
-- [ ] Repeated measurements and plots
-- [ ] Keep experimental findings separate from published specifications
-- [ ] **Enclave comparison:** run inside and outside an enclave (e.g. Intel SGX) on the same enclave-capable machine, or document why that isn't possible
-- [ ] Identify the CPU model and microarchitecture of each machine; document unsupported features and access limits
+- [x] Run on **two** course machines and present results side by side
+- [x] Explain the method and any differences between the machines
+- [x] Include a code snippet and the methodology (what is tested, how, what is measured, how it supports the conclusion)
+- [x] Repeated measurements and plots
+- [x] Keep experimental findings separate from published specifications
+- [x] **Enclave comparison:** run inside and outside an enclave (e.g. Intel SGX) on the same enclave-capable machine, or document why that isn't possible
+- [x] Identify the CPU model and microarchitecture of each machine; document unsupported features and access limits
 
 Report front page must list the selected questions and the total points (120).
 Submit a ZIP containing the PDF report, source code, raw data, plotting scripts,
@@ -97,8 +97,9 @@ Results on `upgrade` (three independent runs, 2026-10-29 ×2 and 2026-11-02, med
 | mix | ~208 | — |
 
 Open questions for the report: noise in the `nop` curve between N≈110 and
-260 (front end or uop-cache effects as the loop body grows?), and the exact
-offset between each step and the PRF size.
+260 (front end or uop-cache effects as the loop body grows?), the exact
+offset between each step and the PRF size, why int and vec step at nearly the
+same N, and why the mixed step falls about 12 below the `nop` step.
 
 Results on `skylark` (three independent runs, 2026-11-02: two on CPU 2 / NUMA node 0, one on CPU 40 / node 1; core cycles via perf; the core ran at ~1.49 GHz, 1.61 TSC ticks per cycle, `userspace` governor):
 
@@ -235,7 +236,8 @@ subtracted. 4 rounds per mode on CPU 12:
 | L2 TLB hit cost | +5.1 ticks | +5.1 ticks |
 | Beyond L2 TLB, 4096 / 16384 pages | 17.3 / 18.2 ticks | **38.5 / 73.5** |
 
-Same ROB, integer PRF, TLB sizes and cache-hit costs; DRAM accesses 20%
+Same ROB and integer PRF steps, L1 DTLB size and cache-hit costs (the L2 TLB
+onset appears earlier inside the enclave; cause untested); DRAM accesses 20%
 slower (memory encryption), page walks 2–4× slower (EPCM checks), and the
 vector PRF step 16 later (likely ZMM16–31 untouched inside the enclave).
 Not possible on `upgrade` (SGX not enabled) or `skylark` (AMD: no SGX; SEV

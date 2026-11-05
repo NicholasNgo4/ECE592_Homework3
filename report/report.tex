@@ -1,7 +1,7 @@
 % ECE 592 Homework 3 (Track B) report.
 % Compile from this directory:  pdflatex report.tex  (run twice for refs)
 % Figures are read from ../analysis/out/ (regenerate with the scripts in analysis/).
-% On Overleaf: upload rob_prf.png, tlb.png and tlb_pmu.png to the project root
+% On Overleaf: upload rob_prf.png, tlb.png, tlb_pmu.png and enclave.png to the project root
 % or to a figures/ folder; both are on the search path below.
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
@@ -38,7 +38,7 @@
 \title{ECE 592 Homework 3 --- Microarchitecture Reverse Engineering\\[0.3em]
 \large Track B: individual work, AI use disclosed}
 \author{Nicholas Ngo}
-\date{November 3, 2026}
+\date{November 4, 2026}
 
 \begin{document}
 \maketitle
@@ -70,8 +70,9 @@ are in the accompanying ZIP (Appendix~\ref{app:repro}); AI use is recorded in
 \file{AI_LOG.md}.
 
 \paragraph{Convention.} Throughout, \emph{measured} values come from my
-experiments and \emph{published} values come from vendor documentation. The
-two are always in separate table columns.
+experiments and \emph{published} values come from the cited sources, which are
+mostly secondary (such as WikiChip) rather than vendor manuals. The two are
+always in separate table columns.
 
 % ---------------------------------------------------------------------------
 \section{Machines and access limitations}
@@ -243,11 +244,14 @@ Therefore, on both machines, \textbf{integer and vector/FP physical
 registers are separate register files}. On \sk{} the alternating curve lies
 directly on the \texttt{nop} curve: splitting the demand removes the
 register limit entirely. On \up{} it steps about 12 earlier than
-\texttt{nop}, so a register file is still slightly limiting there.
+\texttt{nop}. At $N = 208$ each file sees only about 104 allocations, far
+below the single-class steps, so two separate pools do not explain this gap;
+it is listed as an open question (Section~\ref{sec:open}).
 
 \paragraph{Differences between machines.} Same ROB size; the vector PRF
 behaves similarly; the integer PRF limit is reached much earlier on Zen 2.
-Repeatability is high: all \sk{} runs, on both sockets, agree exactly.
+Repeatability is high: all \sk{} runs, on both sockets, agree within the
+sweep resolution of 4.
 
 % ---------------------------------------------------------------------------
 \section{Q6, Q8 and Q9: TLB levels, miss cost and page sizes}
@@ -573,7 +577,7 @@ Beyond the L2 TLB, 16384 pages & 18.2 & \textbf{73.5} & --- \\
 \bottomrule
 \end{tabular}
 \caption{Enclave comparison on \texttt{artemisia}. Step positions agree
-across all 4 rounds in each mode. The \texttt{dense} control is identical in
+across all 4 rounds in each mode within the sweep resolution of 4. The \texttt{dense} control is identical in
 both modes at every point. Published: ROB~\cite{toms-gc,cnc-gc}, integer
 PRF~\cite{cnc-spr-vrf}, vector PRF~\cite{wp-gc}, L1 DTLB~\cite{toms-gc},
 L2 TLB hit cost~\cite{cnc-spr}; $^\ast$STLB size from a secondary
@@ -588,6 +592,10 @@ source only~\cite{blog-stlb}.}
   step (about 500, against a published 512) and the integer register file
   step are identical in both modes, and so are the L1 DTLB size (96--97,
   published 96) and the cost of an L2 TLB hit.
+\item \textbf{The alternating step supports separate register files.} It
+  sits at 428--432 in both modes, well before the \texttt{nop} step. If each
+  file receives half the demand, the integer file should run out at about
+  $2 \times 216 = 432$, which matches.
 \item \textbf{DRAM accesses are 20--22\% slower inside the enclave.} Both
   plateaus of the ROB curves rise (one and two memory latencies per
   iteration), consistent with SGX encrypting enclave memory on every cache
@@ -598,8 +606,9 @@ source only~\cite{blog-stlb}.}
   right). Hits in either TLB level cost the same. This is consistent with
   SGX validating each new translation against the Enclave Page Cache Map
   (EPCM), whose entries must themselves be fetched and cached. The L2 TLB
-  onset appears somewhat earlier inside the enclave, because the more
-  expensive walks make the first misses visible sooner.
+  onset appears somewhat earlier inside the enclave, possibly because the
+  more expensive walks make the first misses visible sooner; I did not test
+  this.
 \item \textbf{The vector register file step moves 16 later inside the
   enclave} (244--248 $\to$ 260) while the integer step does not. On Ice Lake
   server, touching any of the AVX-512 registers ZMM16--31 reserves 16 extra
@@ -636,6 +645,24 @@ source only~\cite{blog-stlb}.}
 \item \textbf{\sk{} integer PRF offset.} The integer step is 64 below the
   published size, compared with 36 on \up; the source of the extra
   integer-register demand on Zen 2 is not identified.
+\item \textbf{\up{} integer and vector steps.} They fall at nearly the same
+  $N$ (144--148), although the published sizes differ (180 and 168). I did
+  not test whether two register files happen to run out together or a shared
+  limit is responsible. A sweep that varies the integer-to-vector ratio could
+  separate these.
+\item \textbf{\up{} alternating step.} It falls about 12 below the
+  \texttt{nop} step, and the cause is not identified.
+\item \textbf{Shape of the ROB/PRF curves.} On both machines the cost drifts
+  upward before the step and keeps rising after it. Front-end limits are a
+  possible cause as the loop grows, but this was not tested.
+\item \textbf{\texttt{artemisia} step offsets.} The steps sit further from the
+  published sizes than on the other machines (about 500 vs.\ 512 for the ROB,
+  216 vs.\ 280 integer, 244--260 vs.\ 332 vector). The sources of these gaps
+  were not isolated.
+\item \textbf{\sk{} L1 DTLB.} 63 entries are usable without misses against a
+  published 64; the reason was not separated.
+\item \textbf{\up{} 2~MiB L2 TLB.} The size comes from one run, because the
+  second run's 2~MiB sweep was cut short by memory fragmentation.
 \item \textbf{\sk{} L2 TLB shape.} The gradual miss curve is measured
   directly with counters, but the hashed-index explanation is untested. It
   could be tested by touching non-contiguous virtual pages.
@@ -649,8 +676,8 @@ source only~\cite{blog-stlb}.}
   (Section~\ref{sec:machines}).
 \item \textbf{Enclave comparison.} It ran on a third machine (\texttt{artemisia}),
   in a debug enclave, for ROB/PRF and 4~KiB TLB only: 2~MiB pages and the
-  \texttt{alias} pattern cannot exist in enclave memory. The vector-register
-  and EPCM explanations in Section~\ref{sec:enclave} are not tested
+  \texttt{alias} pattern cannot exist in enclave memory. The vector-register,
+  EPCM and L2-onset explanations in Section~\ref{sec:enclave} are not tested
   directly.
 \end{itemize}
 

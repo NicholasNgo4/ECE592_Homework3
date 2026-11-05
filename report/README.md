@@ -12,9 +12,8 @@ pdflatex report.tex && pdflatex report.tex
 Figures are read from `../analysis/out/`; regenerate them first if the data changed:
 
 ```bash
-python3 analysis/plot_rob_prf.py && python3 analysis/plot_tlb.py && python3 analysis/plot_tlb_pmu.py
+python3 analysis/plot_rob_prf.py && python3 analysis/plot_tlb.py && python3 analysis/plot_tlb_pmu.py && python3 analysis/plot_enclave.py
 ```
 
 Needs the `booktabs`, `tabularx`, `listings`, `caption`, `enumitem` and `hyperref`
 packages (all in a standard TeX Live install, and on Overleaf).
-`% TODO verify` comments mark published specs to check against the cited manuals.
