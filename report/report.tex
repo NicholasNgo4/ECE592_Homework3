@@ -14,6 +14,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{caption}
+\usepackage{float}
 \usepackage{enumitem}
 \usepackage[hidelinks]{hyperref}
 
@@ -79,7 +80,7 @@ always in separate table columns.
 \section{Machines and access limitations}
 \label{sec:machines}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \begin{tabularx}{\linewidth}{@{}lXX@{}}
@@ -184,7 +185,7 @@ trigger microcode assists).
 
 \subsection{Results}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{rob_prf.png}
 \caption{Cycles (\sk, core cycles) or TSC ticks (\up) per iteration vs.\
@@ -193,7 +194,7 @@ repetitions per point. Data: \file{data/<host>/rob_prf/}.}
 \label{fig:rob}
 \end{figure}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \begin{tabular}{lcc|cc}
@@ -331,23 +332,23 @@ for (int k = 0; k < c->nev; k++) e1[k] = raw_read(c->efd[k], &muxed);
 
 \subsection{Results}
 
-\begin{figure}[p]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\linewidth]{tlb.png}
+\includegraphics[width=0.9\linewidth]{tlb.png}
 \caption{TSC ticks per access vs.\ pages touched, both machines and page
 sizes (\up{} bottom, \sk{} top). Dotted lines mark steps found by the
 automatic detector. The detector misses the gradual \sk{} 4~KiB L2 ramp;
 Figure~\ref{fig:pmu} shows it with counters.}
 \label{fig:tlb}
 \vspace{1em}
-\includegraphics[width=\linewidth]{tlb_pmu.png}
+\includegraphics[width=0.9\linewidth]{tlb_pmu.png}
 \caption{\sk: core cycles per access (top) aligned with DTLB events per
 access (bottom). Dotted lines mark the published Zen 2 capacities (64 and
 2048) for reference.}
 \label{fig:pmu}
 \end{figure}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \begin{tabularx}{\linewidth}{@{}lXX|l@{}}
@@ -374,7 +375,7 @@ holding 4~KiB and 2~MiB entries.}
 \label{tab:tlb}
 \end{table}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \begin{tabular}{lcc|cc}
@@ -547,7 +548,7 @@ both modes. perf counters were not used in either mode.
 
 \subsection{Results}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{enclave.png}
 \caption{\texttt{artemisia}: native (solid) vs.\ SGX enclave (dashed or
@@ -557,7 +558,7 @@ translation cost (\texttt{private} $-$ \texttt{dense}) and the
 \label{fig:enclave}
 \end{figure}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \begin{tabular}{lcc|c}
