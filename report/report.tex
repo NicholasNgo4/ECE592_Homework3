@@ -334,14 +334,17 @@ for (int k = 0; k < c->nev; k++) e1[k] = raw_read(c->efd[k], &muxed);
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.9\linewidth]{tlb.png}
+\includegraphics[width=0.85\linewidth]{tlb.png}
 \caption{TSC ticks per access vs.\ pages touched, both machines and page
 sizes (\up{} bottom, \sk{} top). Dotted lines mark steps found by the
 automatic detector. The detector misses the gradual \sk{} 4~KiB L2 ramp;
 Figure~\ref{fig:pmu} shows it with counters.}
 \label{fig:tlb}
-\vspace{1em}
-\includegraphics[width=0.9\linewidth]{tlb_pmu.png}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{tlb_pmu.png}
 \caption{\sk: core cycles per access (top) aligned with DTLB events per
 access (bottom). Dotted lines mark the published Zen 2 capacities (64 and
 2048) for reference.}
